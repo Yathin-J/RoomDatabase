@@ -15,6 +15,7 @@ class ContactViewModel(
     val contactDAO: ContactDAO
 ) : ViewModel() {
     private val _sortType = MutableStateFlow(SortType.FIRST_NAME)
+
     private val _contacts = _sortType.flatMapLatest { sortType ->
         when (sortType) {
             SortType.FIRST_NAME -> contactDAO.getContactFromFirstName()
@@ -40,16 +41,24 @@ class ContactViewModel(
                 val lastName = state.value.lastName
                 val phoneNumber = state.value.phoneNumber
 
-                if (firstName.isBlank() || lastName.isBlank()|| phoneNumber.isBlank()){
+                if (firstName.isBlank() || lastName.isBlank() || phoneNumber.isBlank()) {
                     return
                 }
-                val contact =  Contact(
+                val contact = Contact(
                     firstName = firstName,
                     secondName = lastName,
                     phoneNumber = phoneNumber
                 )
                 viewModelScope.launch {
-
+                    contactDAO.contactInsert(contact)
+                }
+                _state.update {
+                    it.copy(
+                        isAddingContact = false,
+                        firstName = "",
+                        lastName = "",
+                        phoneNumber = "",
+                    )
                 }
             }
 
@@ -93,7 +102,7 @@ class ContactViewModel(
                     )
                 }
 
-            is ContactEvent.SortType ->
+            is ContactEvent.SortContacts ->
                 _sortType.value = event.sortType
         }
     }
